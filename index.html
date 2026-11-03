@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BiSpec Pairwise AI — Research & Discovery Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F0; --ink:#16211F; --ink-soft:#4A5654;
+    --teal:#0E8C86; --teal-soft:#E4F2F1;
+    --ochre:#B9812E; --ochre-soft:#F5ECDC;
+    --red:#A6432F; --red-soft:#F6E7E3;
+    --line: rgba(22,33,31,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:1.8rem 1.5rem 4rem;}
+  
+  /* Top Nav Bar & Multi-Page Tabs */
+  .nav-bar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-bottom:1rem; border-bottom:1px solid var(--line); margin-bottom:1.5rem;
+    flex-wrap:wrap; gap:1rem;
+  }
+  .nav-tabs{display:flex; gap:0.6rem;}
+  .nav-tab{
+    background:none; border:1px solid var(--line); padding:0.45rem 0.9rem;
+    font-family:'IBM Plex Mono',monospace; font-size:0.82rem; cursor:pointer;
+    color:var(--ink-soft); transition:all 0.15s;
+  }
+  .nav-tab:hover{background:var(--teal-soft); color:var(--teal); border-color:var(--teal);}
+  .nav-tab.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  
+  .auth-nav{display:flex; align-items:center; gap:0.8rem;}
+  .user-badge{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; color:var(--teal);}
+  .auth-btn{
+    padding:0.4rem 0.85rem; border:1px solid var(--line); background:#fff;
+    font-family:'IBM Plex Sans',sans-serif; font-size:0.82rem; font-weight:500; cursor:pointer;
+  }
+  .auth-btn:hover{background:var(--teal-soft); border-color:var(--teal);}
+
+  .mark{font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--teal); display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem;}
+  .dot{width:8px; height:8px; border-radius:50%; background:#999; display:inline-block;}
+  .dot.live{background:var(--teal);}
+  .dot.down{background:var(--red);}
+
+  /* Content Pages */
+  .page{display:none;}
+  .page.active{display:block;}
+
+  h1{
+    font-family:'Source Serif 4',serif; font-weight:600;
+    font-size:clamp(1.7rem,3.8vw,2.3rem); margin:0.2rem 0 0.5rem; line-height:1.2;
+  }
+  .sub{color:var(--ink-soft); max-width:70ch; line-height:1.55; font-size:0.95rem; margin-bottom:1.5rem;}
+  
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; margin-top:1.5rem;}
+  @media (max-width:720px){ .grid{grid-template-columns:1fr;} }
+  .panel{border:1px solid var(--line); background:#fff; padding:1.4rem;}
+  .field{margin-bottom:1rem;}
+  label{display:block; font-size:0.82rem; color:var(--ink-soft); margin-bottom:0.35rem;}
+  input{
+    width:100%; padding:0.65rem 0.75rem; border:1px solid var(--line);
+    background:var(--paper); font-family:'IBM Plex Mono',monospace; font-size:0.95rem;
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--teal); background:#fff;}
+  .hint{font-size:0.78rem; color:var(--ink-soft); margin-top:0.4rem; line-height:1.4;}
+  button.run{
+    margin-top:0.4rem; width:100%; padding:0.75rem; border:none;
+    background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans',sans-serif;
+    font-weight:500; font-size:0.95rem; cursor:pointer; transition:background 0.15s;
+  }
+  button.run:hover{background:var(--teal);}
+  button.run:disabled{background:#999; cursor:default;}
+  
+  /* Venn diagram */
+  .venn-box{display:flex; align-items:center; justify-content:center; min-height:220px;}
+  svg{width:100%; max-width:280px;}
+  .circle{transition:transform 0.6s cubic-bezier(.2,.8,.2,1);}
+  .venn-label{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink);}
+  .venn-pct{font-family:'IBM Plex Mono',monospace; font-size:14px; fill:#fff; font-weight:600;}
+  
+  /* Results view */
+  .results{margin-top:1.6rem; display:none;}
+  .results.show{display:block;}
+  .badge-row{display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.2rem;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem; padding:0.25rem 0.55rem;
+    border:1px solid var(--line); color:var(--ink-soft); background:var(--paper);
+  }
+  .badge.known{border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
+  .score-row{display:flex; align-items:baseline; gap:1.2rem; margin-bottom:1.4rem;}
+  .score-num{font-family:'IBM Plex Mono',monospace; font-size:2.8rem; font-weight:500; color:var(--teal);}
+  .score-cap{font-size:0.85rem; color:var(--ink-soft); max-width:28ch; line-height:1.4;}
+  
+  .report{margin-top:1.2rem; padding:1.6rem; border:1px solid var(--line); background:#fff;}
+  .report h2{font-family:'Source Serif 4',serif; font-size:1.15rem; margin:0 0 0.9rem;}
+  .report p{font-family:'Source Serif 4',serif; font-size:0.98rem; line-height:1.7; color:#2a3533; margin:0 0 0.9rem;}
+  .report .tag{font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--teal); margin-bottom:0.4rem;}
+
+  /* Error banner */
+  .error-box{
+    margin-top:1.4rem; padding:1.2rem 1.4rem; border:2px solid var(--red);
+    background:var(--red-soft); border-radius:4px; display:none;
+  }
+  .error-box.show{display:block;}
+  .error-box h3{color:var(--red); margin:0 0 0.4rem; font-size:1.1rem; font-family:'IBM Plex Sans',sans-serif;}
+  .error-box p{margin:0; font-size:0.88rem; color:#4a1e16; line-height:1.5;}
+
+  /* Chat Box */
+  .chat-panel{margin-top:2.4rem; border:1px solid var(--line); background:#fff; padding:1.4rem;}
+  .chat-panel h2{font-family:'Source Serif 4',serif; font-size:1.15rem; margin:0 0 1rem;}
+  .chat-log{max-height:240px; overflow-y:auto; border:1px solid var(--line); padding:0.8rem; background:var(--paper); margin-bottom:0.8rem; font-size:0.9rem;}
+  .chat-msg{margin-bottom:0.6rem; line-height:1.4;}
+  .chat-msg.user{font-weight:600; color:var(--teal);}
+  .chat-msg.assistant{color:#2a3533;}
+  .chat-row{display:flex; gap:0.5rem;}
+  .chat-row input{flex:1;}
+  .chat-row button{padding:0 1.2rem; background:var(--ink); color:#fff; border:none; cursor:pointer;}
+  .chat-row button:hover{background:var(--teal);}
+
+  /* Paper & Benchmark Tables and Cards */
+  .paper-card, .bench-card{
+    background:#fff; border:1px solid var(--line); padding:1.6rem; margin-bottom:1.5rem;
+  }
+  .paper-card h2, .bench-card h2{
+    font-family:'Source Serif 4',serif; font-size:1.3rem; margin-top:0; margin-bottom:0.8rem;
+  }
+  .paper-card h3, .bench-card h3{
+    font-family:'IBM Plex Sans',sans-serif; font-size:1.02rem; margin-top:1.2rem; margin-bottom:0.4rem; color:var(--teal);
+  }
+  .paper-card p, .bench-card p{line-height:1.7; color:#2d3a38; font-size:0.95rem; margin:0 0 0.8rem;}
+  
+  table.bench-table{
+    width:100%; border-collapse:collapse; margin-top:1rem; font-size:0.88rem;
+  }
+  table.bench-table th, table.bench-table td{
+    padding:0.65rem 0.8rem; border-bottom:1px solid var(--line); text-align:left;
+  }
+  table.bench-table th{
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--ink-soft);
+    background:var(--paper); font-weight:500;
+  }
+  table.bench-table td.mono{font-family:'IBM Plex Mono',monospace;}
+  .bar-container{width:100%; background:var(--paper); height:14px; border-radius:2px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--teal); border-radius:2px;}
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(22,33,31,0.5); display:none; align-items:center; justify-content:center; z-index:999;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:#fff; border:1px solid var(--line); padding:2rem; width:100%; max-width:420px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15); position:relative;
+  }
+  .modal h2{margin-top:0; font-family:'Source Serif 4',serif; font-size:1.4rem;}
+  .modal-switch{margin-top:1rem; font-size:0.82rem; color:var(--ink-soft); text-align:center;}
+  .modal-switch a{color:var(--teal); text-decoration:none; font-weight:600; cursor:pointer;}
+  .modal-close{position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.2rem; cursor:pointer;}
+  .modal-err{color:var(--red); font-size:0.82rem; margin-top:0.5rem; display:none;}
+
+  footer{margin-top:3.5rem; font-size:0.78rem; color:var(--ink-soft); line-height:1.6; border-top:1px solid var(--line); padding-top:1.5rem;}
+  .spinner{display:inline-block; width:13px; height:13px; border:2px solid #ccc; border-top-color:var(--teal); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:0.4rem;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Top Navigation & View Switcher -->
+  <div class="nav-bar">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-page="page-explorer">🧬 Target Explorer</button>
+      <button class="nav-tab" data-page="page-paper">📄 Research Paper</button>
+      <button class="nav-tab" data-page="page-benchmarks">📊 Benchmarks & Metrics</button>
+    </div>
+    <div class="auth-nav" id="authNav">
+      <button class="auth-btn" id="openAuthBtn">Sign In / Sign Up</button>
+    </div>
+  </div>
+
+  <div class="mark"><span class="dot" id="statusDot"></span><span id="statusText">BISPEC PAIRWISE AI — checking backend…</span></div>
+
+  <!-- ======================================================== -->
+  <!-- PAGE 1: TARGET PAIR EXPLORER                            -->
+  <!-- ======================================================== -->
+  <div id="page-explorer" class="page active">
+    <header>
+      <h1>Score a bispecific antibody target pair</h1>
+      <p class="sub">Evaluate single-cell safety differentials, co-expression dynamics, and pairwise machine learning rankings backed by RAG domain literature[cite: 1].</p>
+    </header>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="field">
+          <label for="g1">Target Gene 1</label>
+          <input type="text" id="g1" value="BCMA" placeholder="e.g. CD274, CD40, BCMA" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="g2">Target Gene 2</label>
+          <input type="text" id="g2" value="CD3" placeholder="e.g. CTLA4, EGFR, CD3" autocomplete="off">
+        </div>
+        <button class="run" id="runBtn">Generate Pair Report</button>
+        <div class="hint" id="runHint"></div>
+      </div>
+
+      <div class="panel venn-box">
+        <svg viewBox="0 0 280 200">
+          <circle class="circle" id="cA" cx="115" cy="100" r="60" fill="#0E8C86" opacity="0.55"/>
+          <circle class="circle" id="cB" cx="165" cy="100" r="60" fill="#B9812E" opacity="0.55"/>
+          <text class="venn-label" x="55" y="42" id="labA">TARGET 1</text>
+          <text class="venn-label" x="180" y="42" id="labB">TARGET 2</text>
+          <text class="venn-pct" x="140" y="104" text-anchor="middle" id="labPct">—</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Error Alert Box for Non-Existent Genes -->
+    <div class="error-box" id="errorBox">
+      <h3>❌ INVALID GENE DETECTED</h3>
+      <p id="errorMsg">One or both entered target symbols do not exist in the dataset.</p>
+    </div>
+
+    <!-- Prediction Results Section -->
+    <div class="results" id="results">
+      <div class="badge-row" id="badgeRow"></div>
+      <div class="score-row">
+        <div>
+          <div class="score-num" id="scoreNum">—</div>
+          <div class="score-cap">model viability score (0.0 to 1.0)</div>
+        </div>
+        <div style="border-left:1px solid var(--line); padding-left:1.2rem;">
+          <div class="score-num" style="color:var(--ochre);" id="ebScoreNum">—</div>
+          <div class="score-cap">empirical bayes prior score</div>
+        </div>
+      </div>
+
+      <div class="report">
+        <div class="tag">BIOLOGICAL RAG JUSTIFICATION REPORT</div>
+        <h2 id="repTitle">—</h2>
+        <div id="repBody"></div>
+      </div>
+    </div>
+
+    <!-- Chat Assistant Section -->
+    <div class="chat-panel">
+      <h2>💬 Inquire About Pairs or Methodology</h2>
+      <div class="chat-log" id="chatLog">
+        <div class="chat-msg assistant">Ask any biological question regarding target pairs or the pairwise pipeline.</div>
+      </div>
+      <div class="chat-row">
+        <input type="text" id="chatInput" placeholder="e.g. Why is CD40 and EGFR synergistic?" />
+        <button id="sendChatBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- PAGE 2: RESEARCH PAPER SUMMARY                          -->
+  <!-- ======================================================== -->
+  <div id="page-paper" class="page">
+    <header>
+      <h1>BiSpec Pairwise AI: Paper Overview</h1>
+      <p class="sub">Guiding the selection of bispecific antibody target combinations with pairwise learning and GPT augmentation (Zhang, Wang, and Sun, 2024)[cite: 1].</p>
+    </header>
+
+    <div class="paper-card">
+      <h2>1. The Problem: The Combinatorial Haystack</h2>
+      <p>Bispecific antibodies (BsAbs) bind two distinct antigens simultaneously (e.g. effector T cells to tumor cells, or dual immune checkpoints)[cite: 1]. However, testing tens of thousands of two-gene surface combinations in wet labs costs tens of millions of dollars and years of synthesis[cite: 1].</p>
+      <p>Standard machine learning suffers from <strong>severe data scarcity</strong>: very few bispecific drugs have gained regulatory approval, meaning traditional binary classifiers starve due to class imbalance[cite: 1].</p>
+    </div>
+
+    <div class="paper-card">
+      <h2>2. Core Method: Pairwise Learning-to-Rank</h2>
+      <p>Instead of predicting whether a single pair is "approved or failed" (pointwise binary classification), the authors formulate target discovery as an <strong>ordinal pairwise ranking task</strong>[cite: 1]:</p>
+      <p style="font-family:'IBM Plex Mono',monospace; background:var(--paper); padding:0.8rem; border-left:3px solid var(--teal);">
+        Approved / BLA (Tier 1) > Phase 3 (Tier 2) > Phase 1/2 (Tier 3) > Preclinical (Tier 4) > Discontinued (Tier 5)[cite: 1]
+      </p>
+      <p>Training on head-to-head comparisons of <strong>791 clinical-stage drugs</strong> (Supplementary Table 1) expands the dataset into hundreds of thousands of comparative pairs, enabling boosted decision trees (XGBoost) to extract robust clinical patterns[cite: 1].</p>
+    </div>
+
+    <div class="paper-card">
+      <h2>3. The Five Biological Feature Groups</h2>
+      <p>Features are computed across single-cell RNA sequencing datasets (e.g. NSCLC GSE131907) and biological knowledge graphs[cite: 1]:</p>
+      <ul>
+        <li><strong>Gene2Vec Functional Similarity:</strong> Euclidean vector distance mapping co-expression regulatory proximity (#1 most influential split feature)[cite: 1].</li>
+        <li><strong>Safety Differential (score_safe):</strong> Harmonic mean difference of target transcripts in tumor vs. normal adjacent tissue to prevent on-target off-tumor toxicity[cite: 1].</li>
+        <li><strong>Cell-Compartment Correlation:</strong> Single-cell Pearson correlation (r) within isolated subsets (exhausted CD8+ T cells, Tregs, macrophages)[cite: 1].</li>
+        <li><strong>Stoichiometry / Co-expression Ratios:</strong> Double-positive fraction (P_gene1,gene2) measuring how many physical cells co-express both targets[cite: 1].</li>
+        <li><strong>Pathway Co-occurrence:</strong> Joint membership in curated KEGG signaling cascades and Gene Ontology terms[cite: 1].</li>
+      </ul>
+    </div>
+
+    <div class="paper-card">
+      <h2>4. Phase 2: GPT & RAG Interpretability Layer</h2>
+      <p>To prevent black-box decision making, continuous numeric scores are discretized into quantile bins (e.g. <em>Safe</em>, <em>Strongly positive correlation</em>)[cite: 1]. RAG combines these structured tags with biomedical literature to output natural language clinical justifications[cite: 1].</p>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- PAGE 3: BENCHMARKS & EVALUATION METRICS                 -->
+  <!-- ======================================================== -->
+  <div id="page-benchmarks" class="page">
+    <header>
+      <h1>Model Performance & Architecture Benchmarks</h1>
+      <p class="sub">Empirical validation metrics across 5-fold cross-validation in solid tumors (AUC-ROC)[cite: 1].</p>
+    </header>
+
+    <div class="bench-card">
+      <h2>Model Comparison on NSCLC (GSE131907)</h2>
+      <p>Comparison of machine learning architectures tested on 5-fold cross-validation in Non-Small Cell Lung Cancer[cite: 1]:</p>
+      
+      <table class="bench-table">
+        <thead>
+          <tr>
+            <th>Architecture</th>
+            <th>Type</th>
+            <th>NSCLC AUC</th>
+            <th>Visual Benchmark</th>
+          </tr>
+        </thead>
+        <tbody id="benchmarkRows">
+          <tr>
+            <td><strong>XGBoost + Pairwise</strong></td>
+            <td>Learning-to-Rank</td>
+            <td class="mono"><strong>89.29%</strong></td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 89.29%;"></div></div></td>
+          </tr>
+          <tr>
+            <td>Pointwise XGBoost</td>
+            <td>Binary Classification</td>
+            <td class="mono">88.83%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 88.83%; background:#2A9D8F;"></div></div></td>
+          </tr>
+          <tr>
+            <td>GBDT (Gradient Boost)</td>
+            <td>Ensemble Trees</td>
+            <td class="mono">86.70%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 86.70%; background:#4A5654;"></div></div></td>
+          </tr>
+          <tr>
+            <td>DNN (5-Layer Neural Net)</td>
+            <td>Deep Learning</td>
+            <td class="mono">86.08%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 86.08%; background:#4A5654;"></div></div></td>
+          </tr>
+          <tr>
+            <td>Random Forest</td>
+            <td>Bagging Trees</td>
+            <td class="mono">84.93%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 84.93%; background:#7A8B88;"></div></div></td>
+          </tr>
+          <tr>
+            <td>Logistic Regression (L2)</td>
+            <td>Linear Baseline</td>
+            <td class="mono">78.68%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 78.68%; background:#B9812E;"></div></div></td>
+          </tr>
+          <tr>
+            <td>Single Feature (Double-Positive)</td>
+            <td>Heuristic Baseline</td>
+            <td class="mono">54.76%</td>
+            <td><div class="bar-container"><div class="bar-fill" style="width: 54.76%; background:#A6432F;"></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bench-card">
+      <h2>Pan-Cancer Generalization</h2>
+      <p>Performance of the Pairwise XGBoost ranking engine across distinct independent single-cell tumor cohorts[cite: 1]:</p>
+      <table class="bench-table">
+        <thead>
+          <tr>
+            <th>Cancer Indication</th>
+            <th>Dataset Accession</th>
+            <th>Cells Analyzed</th>
+            <th>5-Fold AUC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Non-Small Cell Lung Cancer (NSCLC)</strong></td>
+            <td class="mono">GSE131907</td>
+            <td class="mono">208,506</td>
+            <td class="mono"><strong>89.29%</strong></td>
+          </tr>
+          <tr>
+            <td>Pancreatic Cancer (PDAC)</td>
+            <td class="mono">GSE205013</td>
+            <td class="mono">308,181</td>
+            <td class="mono">88.93%</td>
+          </tr>
+          <tr>
+            <td>Liver Cancer (HCC)</td>
+            <td class="mono">GSE156625</td>
+            <td class="mono">42,762,240</td>
+            <td class="mono">88.04%</td>
+          </tr>
+          <tr>
+            <td>Head and Neck Cancer (HNSCC)</td>
+            <td class="mono">GSE164690</td>
+            <td class="mono">149,609</td>
+            <td class="mono">87.79%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Custom Benchmark Injection Slot -->
+    <div class="bench-card">
+      <h2>Your Local Run Evaluation</h2>
+      <p>When you evaluate your trained model locally (`model.predict` on validation split), your custom checkpoint results can be injected below:</p>
+      <div id="localBenchmarkStats" style="display:flex; gap:1.5rem; margin-top:1rem; flex-wrap:wrap;">
+        <div style="border:1px solid var(--line); padding:1rem; background:var(--paper); min-width:180px;">
+          <div style="font-size:0.75rem; color:var(--ink-soft); font-family:'IBM Plex Mono';">TEST AUC-ROC</div>
+          <div style="font-size:1.8rem; font-weight:600; color:var(--teal);" id="localAuc">0.8914</div>
+        </div>
+        <div style="border:1px solid var(--line); padding:1rem; background:var(--paper); min-width:180px;">
+          <div style="font-size:0.75rem; color:var(--ink-soft); font-family:'IBM Plex Mono';">VALIDATED DRUG PAIRS</div>
+          <div style="font-size:1.8rem; font-weight:600; color:var(--ochre);">791</div>
+        </div>
+        <div style="border:1px solid var(--line); padding:1rem; background:var(--paper); min-width:180px;">
+          <div style="font-size:0.75rem; color:var(--ink-soft); font-family:'IBM Plex Mono';">TOP SPLIT FEATURE</div>
+          <div style="font-size:1.2rem; font-weight:600; color:var(--ink); padding-top:0.4rem;">Gene2Vec Sim</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Backend URL: <code id="apiUrlLabel">http://localhost:8000</code>. BiSpec Pairwise AI — Single-Cell & RAG Antibody Target Discovery Engine[cite: 1].
+  </footer>
+
+</div>
+
+<!-- Authentication Modal -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <button class="modal-close" id="closeAuthBtn">&times;</button>
+    <h2 id="modalTitle">Sign In</h2>
+    <div class="field">
+      <label for="authEmail">Email Address</label>
+      <input type="email" id="authEmail" placeholder="name@research.org" required>
+    </div>
+    <div class="field">
+      <label for="authPass">Password</label>
+      <input type="password" id="authPass" placeholder="••••••••" required>
+    </div>
+    <button class="run" id="submitAuthBtn">Sign In</button>
+    <div class="modal-err" id="modalErr"></div>
+    <div class="modal-switch" id="modalSwitch">
+      Don't have an account? <a id="toggleAuthMode">Sign Up</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+document.getElementById("apiUrlLabel").textContent = API_BASE;
+
+// Page Navigation Elements
+const navTabs = document.querySelectorAll(".nav-tab");
+const pages = document.querySelectorAll(".page");
+
+navTabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    navTabs.forEach(t => t.classList.remove("active"));
+    pages.forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    const targetPage = document.getElementById(tab.dataset.page);
+    if(targetPage) targetPage.classList.add("active");
+  });
+});
+
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+const g1sel = document.getElementById("g1");
+const g2sel = document.getElementById("g2");
+const runBtn = document.getElementById("runBtn");
+const runHint = document.getElementById("runHint");
+const results = document.getElementById("results");
+const errorBox = document.getElementById("errorBox");
+const errorMsg = document.getElementById("errorMsg");
+
+// Auth Elements
+const authNav = document.getElementById("authNav");
+const authModal = document.getElementById("authModal");
+const openAuthBtn = document.getElementById("openAuthBtn");
+const closeAuthBtn = document.getElementById("closeAuthBtn");
+const submitAuthBtn = document.getElementById("submitAuthBtn");
+const modalTitle = document.getElementById("modalTitle");
+const modalSwitch = document.getElementById("modalSwitch");
+const modalErr = document.getElementById("modalErr");
+const authEmail = document.getElementById("authEmail");
+const authPass = document.getElementById("authPass");
+
+let isSignUp = false;
+let currentUser = null;
+let sessionId = null;
+
+function checkAuth(){
+  const token = localStorage.getItem("bispec_token");
+  const email = localStorage.getItem("bispec_email");
+  if(token && email){
+    currentUser = email;
+    authNav.innerHTML = `
+      <span class="user-badge">👤 ${email}</span>
+      <button class="auth-btn" id="logoutBtn" style="margin-left:8px;">Sign Out</button>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+  } else {
+    currentUser = null;
+    authNav.innerHTML = `<button class="auth-btn" id="openAuthBtn">Sign In / Sign Up</button>`;
+    document.getElementById("openAuthBtn").addEventListener("click", () => openModal(false));
+  }
+}
+
+function openModal(signUpMode=false){
+  isSignUp = signUpMode;
+  modalTitle.textContent = isSignUp ? "Create an Account" : "Sign In";
+  submitAuthBtn.textContent = isSignUp ? "Sign Up" : "Sign In";
+  modalSwitch.innerHTML = isSignUp 
+    ? `Already have an account? <a id="toggleAuthMode">Sign In</a>`
+    : `Don't have an account? <a id="toggleAuthMode">Sign Up</a>`;
+  document.getElementById("toggleAuthMode").addEventListener("click", () => openModal(!isSignUp));
+  modalErr.style.display = "none";
+  authModal.classList.add("open");
+}
+
+function closeModal(){ authModal.classList.remove("open"); }
+
+function logout(){
+  localStorage.removeItem("bispec_token");
+  localStorage.removeItem("bispec_email");
+  checkAuth();
+}
+
+async function handleAuthSubmit(){
+  const email = authEmail.value.trim();
+  const password = authPass.value.trim();
+  if(!email || !password){
+    modalErr.textContent = "Please fill in all fields.";
+    modalErr.style.display = "block";
+    return;
+  }
+
+  const endpoint = isSignUp ? `${API_BASE}/auth/signup` : `${API_BASE}/auth/signin`;
+  submitAuthBtn.disabled = true;
+  modalErr.style.display = "none";
+
+  try{
+    const r = await fetch(endpoint, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || "Authentication failed.");
+    localStorage.setItem("bispec_token", d.token);
+    localStorage.setItem("bispec_email", d.email);
+    closeModal();
+    checkAuth();
+  }catch(e){
+    modalErr.textContent = e.message;
+    modalErr.style.display = "block";
+  }
+  submitAuthBtn.disabled = false;
+}
+
+closeAuthBtn.addEventListener("click", closeModal);
+submitAuthBtn.addEventListener("click", handleAuthSubmit);
+
+async function checkBackend(){
+  try{
+    const r = await fetch(`${API_BASE}/health`);
+    if(r.ok){
+      statusDot.className = "dot live";
+      statusText.textContent = "BISPEC PAIRWISE AI — backend live (Port 8000)";
+    } else { throw new Error(); }
+  }catch(e){
+    statusDot.className = "dot down";
+    statusText.textContent = "BISPEC PAIRWISE AI — backend offline";
+  }
+}
+
+function updateVenn(g1, g2, score){
+  document.getElementById("labA").textContent = g1;
+  document.getElementById("labB").textContent = g2;
+  const pct = score ? Math.round(score * 100) : null;
+  document.getElementById("labPct").textContent = pct !== null ? `${pct}%` : "—";
+  const overlap = pct === null ? 30 : 15 + (pct/100)*40;
+  document.getElementById("cA").style.transform = `translateX(${-overlap/2}px)`;
+  document.getElementById("cB").style.transform = `translateX(${overlap/2}px)`;
+}
+
+async function runAnalysis(){
+  if(!currentUser){
+    openModal(false);
+    modalErr.textContent = "Please sign in to generate and view target pair predictions.";
+    modalErr.style.display = "block";
+    return;
+  }
+
+  const g1 = g1sel.value.trim().toUpperCase();
+  const g2 = g2sel.value.trim().toUpperCase();
+  if(!g1 || !g2){
+    runHint.textContent = "Please enter both target genes.";
+    return;
+  }
+  
+  errorBox.classList.remove("show");
+  results.classList.remove("show");
+  runHint.innerHTML = '<span class="spinner"></span>Extracting features & querying RAG backend…';
+  runBtn.disabled = true;
+
+  try{
+    const resp = await fetch(`${API_BASE}/report`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ gene_a: g1, gene_b: g2 })
+    });
+    
+    if(!resp.ok) throw new Error(`Server returned ${resp.status}`);
+    const data = await resp.json();
+    const cov = String(data.coverage || "").toLowerCase();
+
+    if(["one_known", "neither_known", "none_known", "unknown"].includes(cov)){
+      errorBox.classList.add("show");
+      errorMsg.innerHTML = `Target gene validation failure: <strong>${g1}</strong> or <strong>${g2}</strong> was not found in the dataset (Coverage status: <code>${cov}</code>). Non-existent targets cannot be evaluated.`;
+      updateVenn(g1, g2, null);
+    } else {
+      renderResult(g1, g2, data);
+    }
+    runHint.textContent = "";
+  }catch(err){
+    runHint.textContent = "Could not reach the FastAPI backend on port 8000.";
+  }
+  runBtn.disabled = false;
+}
+
+function renderResult(g1, g2, data){
+  const score = parseFloat(data.model_score || 0.0);
+  const ebScore = parseFloat(data.eb_score || 0.0);
+  updateVenn(g1, g2, score);
+
+  document.getElementById("badgeRow").innerHTML = `
+    <span class="badge known">Dataset Coverage: ${data.coverage || "both_known"}</span>
+    <span class="badge">Chunks Used: ${data.n_chunks_used || 0}</span>
+  `;
+
+  document.getElementById("scoreNum").textContent = score.toFixed(4);
+  document.getElementById("ebScoreNum").textContent = ebScore.toFixed(4);
+  document.getElementById("repTitle").textContent = `${g1} + ${g2}`;
+  document.getElementById("repBody").innerHTML = `<p>${data.explanation || "No explanation returned."}</p>`;
+  results.classList.add("show");
+}
+
+// Chat assistant
+const chatInput = document.getElementById("chatInput");
+const sendChatBtn = document.getElementById("sendChatBtn");
+const chatLog = document.getElementById("chatLog");
+
+async function sendChat(){
+  const msg = chatInput.value.trim();
+  if(!msg) return;
+
+  chatLog.innerHTML += `<div class="chat-msg user">You: ${msg}</div>`;
+  chatInput.value = "";
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  try{
+    const r = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ session_id: sessionId, message: msg })
+    });
+    const d = await r.json();
+    sessionId = d.session_id;
+    chatLog.innerHTML += `<div class="chat-msg assistant">AI: ${d.reply}</div>`;
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }catch(e){
+    chatLog.innerHTML += `<div class="chat-msg assistant" style="color:var(--red);">Error connecting to chat backend.</div>`;
+  }
+}
+
+sendChatBtn.addEventListener("click", sendChat);
+chatInput.addEventListener("keydown", (e) => { if(e.key === "Enter") sendChat(); });
+runBtn.addEventListener("click", runAnalysis);
+
+checkAuth();
+checkBackend();
+setInterval(checkBackend, 15000);
+</script>
+</body>
+</html>
