@@ -1,0 +1,29 @@
+# --- Web API & Server ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic[email]>=2.6.0
+requests>=2.31.0
+
+# --- Single-Cell RNA-seq & Bioinformatics ---
+scanpy>=1.9.8
+anndata>=0.10.5
+scipy>=1.12.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# --- Machine Learning & Modeling ---
+xgboost>=2.0.3
+scikit-learn>=1.4.0
+
+# --- RAG, Vector Search & LLM ---
+chromadb>=0.4.24
+sentence-transformers>=2.5.1
+pypdf>=4.0.0
+openai>=1.13.0
+
+# --- Visualizations & Analysis ---
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# --- CLI / Progress Monitoring ---
+tqdm>=4.66.0
